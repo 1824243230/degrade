@@ -1,0 +1,72 @@
+# Catkin build and installation directories (including nested workspaces)
+build/
+devel/
+install/
+build_isolated/
+devel_isolated/
+install_isolated/
+.catkin_tools/
+/.catkin_workspace
+
+# Catkin-generated top-level CMake symlink
+/src/CMakeLists.txt
+
+# CMake / Ninja generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+compile_commands.json
+Testing/
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
+CMakeUserPresets.json
+
+# Compiled objects and libraries
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+/src/sa_livo/tests/saif_test
+/src/sa_livo/tests/adaptive_voxel_map_v2_test
+
+# Downloaded / installed dependencies and ROS runtime files
+/.deps/
+/.ros/
+/log/
+/logs/
+/src/sa_livo/Log/
+*.log
+
+# Sensor recordings and generated point clouds
+*.bag
+*.bag.active
+*.bag.orig
+*.db3
+*.db3-shm
+*.db3-wal
+*.mcap
+*.pcd
+
+# Python and editor caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.cache/
+.clangd/
+.vscode/ipch/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

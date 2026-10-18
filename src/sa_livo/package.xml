@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!-- Modified for ROS 2; immediate source: integralrobotics/FAST-LIVO2
+     commit d4ad051 (2025-04-09). Further modified for this reproduction by
+     Huashuijingying, 2026-08. -->
+<package format="3">
+  <name>sa_livo</name>
+  <version>0.0.0</version>
+
+  <description>
+    An independent ROS 1 reproduction of SA-LIVO, including modified
+    FAST-LIVO2 code and new subspace-aware fusion modules. This is not the
+    SA-LIVO authors' official implementation.
+  </description>
+
+  <maintainer email="1098763683@qq.com">Huashuijingying</maintainer>
+
+  <license>GPL-2.0-only</license>
+
+  <url type="repository">https://github.com/Huashuijingying/SA-LIVO-Reimpl</url>
+  <url type="bugtracker">https://github.com/Huashuijingying/SA-LIVO-Reimpl/issues</url>
+
+  <author email="1098763683@qq.com">Huashuijingying</author>
+  <author>FAST-LIVO2 and FAST-LIVO2 ROS2 contributors</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>rosbag</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>pcl_conversions</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
+  <depend>livox_ros_driver2</depend>
+  <depend>vikit_common</depend>
+  <depend>eigen</depend>
+  <depend>libopencv-dev</depend>
+  <depend>libpcl-all-dev</depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rviz</exec_depend>
+  <export><build_type>catkin</build_type></export>
+</package>
