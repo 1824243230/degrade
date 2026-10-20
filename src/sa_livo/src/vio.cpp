@@ -31,6 +31,19 @@ VIOManager::~VIOManager()
   feat_map.clear();
 }
 
+void VIOManager::resetTracking()
+{
+  if (visual_submap) visual_submap->reset();
+  for (auto& entry:warp_map) delete entry.second;
+  warp_map.clear();
+  for (auto& entry:feat_map) delete entry.second;
+  feat_map.clear(); sub_feat_map.clear(); retrieve_voxel_points.clear(); append_voxel_points.clear();
+  new_frame_.reset(); img_cp.release(); img_rgb.release(); img_test.release();
+  frame_count=0; info_form_only_=false; vio_Lambda_.setZero(); vio_b_.setZero();
+  has_ref_patch_cache=false;
+  if (cam) resetGrid();
+}
+
 void VIOManager::beginInfoForm()
 {
   info_form_only_ = true;

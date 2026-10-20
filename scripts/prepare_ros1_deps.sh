@@ -20,9 +20,11 @@ cmake -S .deps/src/Sophus -B .deps/build/Sophus \
   -DCMAKE_INSTALL_PREFIX="$SA_LIVO_WORKSPACE/.deps/install" \
   -DBUILD_SOPHUS_TESTS=OFF -DBUILD_SOPHUS_EXAMPLES=OFF \
   -DSOPHUS_USE_BASIC_LOGGING=ON -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON \
-  -DEigen3_DIR=/usr/share/eigen3/cmake
+  -DEigen3_DIR=/usr/lib/cmake/eigen3
 cmake --build .deps/build/Sophus --target install -j2
 cmake -S .deps/src/Livox-SDK2 -B .deps/build/Livox-SDK2 \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$SA_LIVO_WORKSPACE/.deps/install" \
   -DCMAKE_C_COMPILER=/usr/bin/gcc-9 -DCMAKE_CXX_COMPILER=/usr/bin/g++-9
 cmake --build .deps/build/Livox-SDK2 --target install -j2
+bash scripts/prepare_livox_ros1.sh
+bash scripts/prepare_kiss_matcher_ros1.sh

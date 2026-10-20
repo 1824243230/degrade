@@ -152,6 +152,9 @@ public:
   int lidar_type, point_filter_num, N_SCANS, SCAN_RATE;
   
   double blind, blind_sqr;
+  double max_range = 150.0;
+  // Standard velodyne_pointcloud XYZIRT uses seconds; internal curvature is ms.
+  double velodyne_time_scale = 1000.0;
   bool feature_enabled, given_offset_time;
   ros::Publisher pub_full;
   ros::Publisher pub_surf;

@@ -21,6 +21,8 @@ Further modified for this SA-LIVO reproduction by Huashuijingying, 2026-08.
 #include <fstream>
 #include "common_lib.h"
 #include <condition_variable>
+#include <atomic>
+#include <mutex>
 #include <nav_msgs/Odometry.h>
 #include <utils/so3_math.h>
 
@@ -37,6 +39,8 @@ public:
   ~ImuProcess();
 
   void Reset();
+  void resetForRelocalization(double stamp, const sensor_msgs::Imu::ConstPtr &boundary,
+                              const StatesGroup &state, const V3D &mean_acceleration);
   void Reset(double start_timestamp, const sensor_msgs::Imu::ConstPtr &lastimu);
   void set_extrinsic(const V3D &transl, const M3D &rot);
   void set_extrinsic(const V3D &transl);
@@ -48,6 +52,7 @@ public:
   void set_inv_expo_cov(const double &inv_expo);
   void set_imu_init_frame_num(const int &num);
   void set_use_baseline_init(const bool v) { use_baseline_init_ = v; }
+  void set_stationary_init(bool enabled, double duration, double gyro_max, double acc_std);
   void cache_init_imu(const sensor_msgs::Imu::ConstPtr &imu);
   void disable_imu();
   void disable_gravity_est();
@@ -67,7 +72,7 @@ public:
   double cov_inv_expo;
   double first_lidar_time;
   bool imu_time_init = false;
-  bool imu_need_init = true;
+  std::atomic<bool> imu_need_init{true};
   M3D Eye3d;
   V3D Zero3d;
   int lidar_type;
@@ -89,6 +94,10 @@ private:
   double time_last_scan;
   int init_iter_num = 1, MAX_INI_COUNT = 20;
   std::vector<sensor_msgs::Imu::ConstPtr> init_imu_samples_;
+  std::mutex init_imu_mutex_;
+  bool stationary_init_=false;
+  double stationary_duration_=1.0, stationary_gyro_max_=0.05, stationary_acc_std_=0.10;
+  std::deque<sensor_msgs::Imu::ConstPtr> stationary_imus_;
   bool b_first_frame = true;
   bool use_baseline_init_ = false; // use original FAST-LIVO2 IMU_init averaging
   bool imu_en = true;

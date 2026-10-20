@@ -23,9 +23,15 @@
   <author>FAST-LIVO2 and FAST-LIVO2 ROS2 contributors</author>
   
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <depend>std_srvs</depend>
+  <depend>yaml-cpp</depend>
   <depend>roscpp</depend>
   <depend>rosbag</depend>
   <depend>sensor_msgs</depend>
+  <depend>velodyne_pointcloud</depend>
+  <depend>velodyne_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>visualization_msgs</depend>
@@ -43,5 +49,10 @@
   <depend>libpcl-all-dev</depend>
   <exec_depend>roslaunch</exec_depend>
   <exec_depend>rviz</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
+  <exec_depend>python3-matplotlib</exec_depend>
+  <test_depend>rostest</test_depend>
+  <test_depend>python3-numpy</test_depend>
   <export><build_type>catkin</build_type></export>
 </package>

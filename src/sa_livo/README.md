@@ -82,3 +82,30 @@ rosbag play /absolute/path/to/recording.bag --clock
 
 继承代码遵循 GPL-2.0-only；外部依赖保留各自许可。
 vikit 声明 GPLv3，组合二进制的再分发需要另行确认许可兼容性。
+
+## 固定地图定位与失效恢复
+
+已增加 ROS1 KISS-Matcher 启动重定位和运行中恢复。使用已有 PCD 及其
+`.yaml` 元信息，设备在启动和恢复时停稳；质量不可靠期间暂停有效位姿输出。
+相机缺失时允许 LiDAR/IMU 定位，固定地图禁止实时写入。
+
+```bash
+bash scripts/prepare_ros1_deps.sh
+bash scripts/build_ros1.sh
+source /opt/ros/noetic/setup.bash
+source devel/setup.bash
+roslaunch sa_livo localization.launch map_path:=/absolute/path/map.pcd \
+  calibration_id:=default sensor_params_file:=/absolute/path/sensors.yaml
+rostopic echo /localization/status
+```
+
+本次导出的地图会附带实际重力方向、地图版本和标定标识。旧 PCD 需补齐可信
+元信息；不能从默认坐标轴推断重力。完整构建、接口、回放和验收说明见工作区
+`KISS_MATCHER_ROS1实施方案.md`。
+
+## Long Corridor 无图像回放
+
+`mapping_long_corridor.launch` 使用 `config/long_corridor.yaml`，强制 `img_en: 0`。
+工作区脚本 `bash scripts/validate_long_corridor.sh` 将原始 `/velodyne_packets`
+解码为标准点云，并对整段 LiDAR/IMU 回放输出轨迹及参考误差。初始运动期间等待
+IMU 稳定窗口后再开始建图，参数及实测结果见工作区 `Long_Corridor_ROS1验证记录.md`。

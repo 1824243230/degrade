@@ -1,0 +1,7 @@
+# The PCD's actual numerical coordinates and gravity must be used.
+# gravity_align_en=false during mapping DOES NOT imply gravity=[0,0,-9.81].
+units: m
+frame_id: map
+version: example-map-v1
+calibration_id: default
+gravity: [0.0, 0.0, -9.81]

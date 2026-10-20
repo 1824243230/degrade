@@ -375,6 +375,11 @@ public:
   // True when the last update was under the soft degeneracy guard. The mapper
   // uses this to keep a suspect pose from contaminating the voxel map.
   bool map_update_blocked_ = false;
+  bool fixed_map_ = false;
+  std::string world_frame_ = "camera_init";
+  void loadPriorMap(const std::vector<V3D>& points, double sigma);
+  void resetTracking();
+  ~VoxelMapManager();
   V3D position_last_;
 
   V3D last_slide_position = {0,0,0};

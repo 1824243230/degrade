@@ -1,0 +1,21 @@
+<launch>
+  <arg name="map_path" />
+  <arg name="metadata_path" default="$(arg map_path).yaml" />
+  <arg name="calibration_id" default="default" />
+  <arg name="sensor_params_file" default="$(find sa_livo)/config/avia.yaml" />
+  <arg name="camera_params_file" default="$(find sa_livo)/config/camera_pinhole.yaml" />
+  <arg name="localization_params_file" default="$(find sa_livo)/config/localization.yaml" />
+  <arg name="direct_bag_path" default="" />
+  <arg name="use_sim_time" default="false" />
+  <param name="use_sim_time" value="$(arg use_sim_time)" />
+  <node pkg="sa_livo" type="fastlivo_mapping" name="laserMapping" output="screen" required="true">
+    <rosparam command="load" file="$(arg sensor_params_file)" />
+    <rosparam command="load" file="$(arg camera_params_file)" />
+    <rosparam command="load" file="$(arg localization_params_file)" />
+    <param name="localization/enabled" value="true" />
+    <param name="localization/map_path" value="$(arg map_path)" type="str" />
+    <param name="localization/metadata_path" value="$(arg metadata_path)" type="str" />
+    <param name="localization/calibration_id" value="$(arg calibration_id)" type="str" />
+    <param name="common/direct_bag_path" value="$(arg direct_bag_path)" type="str" />
+  </node>
+</launch>

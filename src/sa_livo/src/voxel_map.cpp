@@ -1290,8 +1290,43 @@ void VoxelMapManager::seedMap(const StatesGroup &state)
   UpdateVoxelMap(pv_list_);
 }
 
+VoxelMapManager::~VoxelMapManager()
+{
+  for (auto &entry:voxel_map_) delete entry.second;
+  for (auto &entry:voxel_map_coarse_) delete entry.second;
+}
+
+void VoxelMapManager::resetTracking()
+{
+  plane_cache_.clear(); pv_list_.clear(); ptpl_list_.clear(); cross_mat_list_.clear(); body_cov_list_.clear();
+  degenerate_update_=false; map_update_blocked_=false; degenerate_guard_active_=false;
+  degenerate_bad_frames_=degenerate_good_frames_=current_frame_id_=0;
+  last_lidar_info_scale_=1.0; effct_feat_num_=feats_down_size_=0;
+  fused_last_=FusedInfo6();
+}
+
+void VoxelMapManager::loadPriorMap(const std::vector<V3D>& points, double sigma)
+{
+  fixed_map_=false;
+  for (auto &entry:voxel_map_) delete entry.second;
+  for (auto &entry:voxel_map_coarse_) delete entry.second;
+  voxel_map_.clear(); voxel_map_coarse_.clear(); adaptive_map_->clear();
+  config_setting_.adaptive_voxel_en_=false; // map points have no acquisition range
+  config_setting_.map_sliding_en=false;
+  std::vector<pointWithVar> data;
+  data.reserve(points.size());
+  for (const auto& point:points) {
+    pointWithVar pv; pv.point_w=point; pv.var=pv.var_nostate=M3D::Identity()*sigma*sigma;
+    data.push_back(pv);
+  }
+  UpdateVoxelMap(data);
+  fixed_map_=true;
+  resetTracking();
+}
+
 void VoxelMapManager::UpdateVoxelMap(const std::vector<pointWithVar> &input_points)
 {
+  if (fixed_map_) return;
   if (config_setting_.coarse_map_fallback_en_)
     updateCoarseMap(input_points);
   if (config_setting_.adaptive_support_en_)
@@ -2252,7 +2287,7 @@ void VoxelMapManager::pubSinglePlane(visualization_msgs::MarkerArray &plane_pub,
                                      const float alpha, const Eigen::Vector3d rgb)
 {
   visualization_msgs::Marker plane;
-  plane.header.frame_id = "camera_init";
+  plane.header.frame_id = world_frame_;
   plane.header.stamp = ros::Time();
   plane.ns = plane_ns;
   plane.id = single_plane.id_;
@@ -2337,6 +2372,7 @@ void VoxelMapManager::mapJet(double v, double vmin, double vmax, uint8_t &r, uin
 
 void VoxelMapManager::mapSliding()
 {
+  if (fixed_map_) return;
   if((position_last_ - last_slide_position).norm() < config_setting_.sliding_thresh)
   {
     std::cout<<RED<<"[DEBUG]: Last sliding length "<<(position_last_ - last_slide_position).norm()<<RESET<<"\n";

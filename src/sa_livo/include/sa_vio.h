@@ -149,7 +149,10 @@ public:
   void advanceWindow(const cv::Mat &img, const StatesGroup &x,
                      const std::vector<pointWithVar> &pv_list, double frame_time);
 
-  void reset() { window_.clear(); frame_counter_ = 0; }
+  void reset() {
+    window_.clear(); frame_counter_ = 0; q_last_=rrms_last_=0.0; n_valid_=n_rej_=0;
+    img_cp_.release(); img_gray_.release();
+  }
 
   // Statistics / debug
   int numValidObs() const { return n_valid_; }

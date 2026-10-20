@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project(sa_livo LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -11,9 +11,14 @@ endif()
 find_package(catkin REQUIRED COMPONENTS
   roscpp rosbag sensor_msgs geometry_msgs nav_msgs visualization_msgs std_msgs
   tf2_ros tf2_geometry_msgs pcl_ros pcl_conversions cv_bridge image_transport
-  livox_ros_driver2 vikit_common)
+  livox_ros_driver2 vikit_common std_srvs message_generation)
+add_message_files(FILES LocalizationStatus.msg)
+generate_messages(DEPENDENCIES std_msgs)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-find_package(PCL 1.10 REQUIRED COMPONENTS common io filters)
+find_package(PCL 1.10 REQUIRED COMPONENTS common io filters kdtree)
+find_package(kiss_matcher REQUIRED CONFIG)
+find_package(small_gicp REQUIRED CONFIG)
+find_package(yaml-cpp REQUIRED)
 find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc imgcodecs calib3d highgui)
 find_package(Sophus 1.22.10 REQUIRED CONFIG)
 get_target_property(Eigen3_INCLUDE_DIRS Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
@@ -21,14 +26,15 @@ get_target_property(Sophus_INCLUDE_DIRS Sophus::Sophus INTERFACE_INCLUDE_DIRECTO
 find_package(OpenMP REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost REQUIRED COMPONENTS thread)
+find_package(velodyne_pointcloud REQUIRED)
 find_package(mimalloc QUIET)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES vio lio pre imu_proc laser_mapping utils saif sa_vio
+  LIBRARIES vio lio pre imu_proc laser_mapping utils saif sa_vio localization
   CATKIN_DEPENDS roscpp rosbag sensor_msgs geometry_msgs nav_msgs visualization_msgs
     std_msgs tf2_ros tf2_geometry_msgs pcl_ros pcl_conversions cv_bridge
-    image_transport livox_ros_driver2 vikit_common
+    image_transport livox_ros_driver2 vikit_common std_srvs message_runtime
   DEPENDS Eigen3 PCL OpenCV Sophus)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -53,30 +59,37 @@ add_library(vio src/vio.cpp src/frame.cpp src/visual_point.cpp)
 add_library(pre src/preprocess.cpp)
 add_library(imu_proc src/IMU_Processing.cpp)
 add_library(sa_vio src/sa_vio.cpp)
-add_library(laser_mapping src/LIVMapper.cpp)
+add_library(localization src/localization_map.cpp src/localization_manager.cpp src/kiss_relocalizer.cpp)
+target_link_libraries(localization PUBLIC Eigen3::Eigen ${PCL_LIBRARIES} Threads::Threads
+  PRIVATE kiss_matcher::kiss_matcher_core small_gicp::small_gicp yaml-cpp TBB::tbb)
+set_target_properties(localization PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+add_library(laser_mapping src/LIVMapper.cpp src/LIVMapperLocalization.cpp)
 target_link_libraries(saif PUBLIC Eigen3::Eigen)
 foreach(target lio vio pre imu_proc sa_vio laser_mapping)
   target_link_libraries(${target} PUBLIC ${roscpp_LIBRARIES} ${rosbag_LIBRARIES}
     ${tf2_ros_LIBRARIES} ${cv_bridge_LIBRARIES} ${image_transport_LIBRARIES}
     ${vikit_common_LIBRARIES} ${PCL_LIBRARIES}
     ${OpenCV_LIBRARIES} Eigen3::Eigen Sophus::Sophus OpenMP::OpenMP_CXX Threads::Threads)
-  add_dependencies(${target} ${catkin_EXPORTED_TARGETS})
+  add_dependencies(${target} ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 endforeach()
 target_link_libraries(lio PUBLIC utils saif)
 target_link_libraries(vio PUBLIC lio)
 target_link_libraries(pre PUBLIC utils)
 target_link_libraries(imu_proc PUBLIC utils)
 target_link_libraries(sa_vio PUBLIC saif)
-target_link_libraries(laser_mapping PUBLIC vio lio sa_vio pre imu_proc ${Boost_LIBRARIES})
+target_link_libraries(laser_mapping PUBLIC vio lio sa_vio pre imu_proc localization ${Boost_LIBRARIES})
 
 add_executable(fastlivo_mapping src/main.cpp)
 target_link_libraries(fastlivo_mapping PRIVATE laser_mapping)
 add_dependencies(fastlivo_mapping ${catkin_EXPORTED_TARGETS})
+add_executable(decode_velodyne_bag src/decode_velodyne_bag.cpp)
+target_include_directories(decode_velodyne_bag PRIVATE ${velodyne_pointcloud_INCLUDE_DIRS})
+target_link_libraries(decode_velodyne_bag PRIVATE ${velodyne_pointcloud_LIBRARIES} ${rosbag_LIBRARIES})
 if(mimalloc_FOUND)
   target_link_libraries(fastlivo_mapping PRIVATE mimalloc)
 endif()
 
-install(TARGETS fastlivo_mapping utils saif lio vio pre imu_proc sa_vio laser_mapping
+install(TARGETS fastlivo_mapping decode_velodyne_bag utils saif lio vio pre imu_proc sa_vio laser_mapping localization
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
@@ -84,6 +97,28 @@ install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 install(DIRECTORY config launch rviz_cfg DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 if(CATKIN_ENABLE_TESTING)
+  add_executable(velodyne_preprocess_test tests/velodyne_preprocess_test.cpp)
+  target_link_libraries(velodyne_preprocess_test PRIVATE pre imu_proc)
+  target_compile_options(velodyne_preprocess_test PRIVATE -UNDEBUG)
+  add_test(NAME velodyne_preprocess_test COMMAND velodyne_preprocess_test)
+  find_package(rostest REQUIRED)
+  catkin_install_python(PROGRAMS tests/localization_pipeline_test.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+  add_rostest(tests/localization_pipeline.test)
+  add_executable(localization_test tests/localization_test.cpp)
+  target_link_libraries(localization_test PRIVATE localization kiss_matcher::kiss_matcher_core)
+  target_compile_options(localization_test PRIVATE -UNDEBUG)
+  add_test(NAME localization_test COMMAND localization_test)
+  set_tests_properties(localization_test PROPERTIES TIMEOUT 180)
+  add_executable(localization_state_test tests/localization_state_test.cpp)
+  target_link_libraries(localization_state_test PRIVATE localization lio imu_proc)
+  target_compile_options(localization_state_test PRIVATE -UNDEBUG)
+  add_test(NAME localization_state_test COMMAND localization_state_test)
+  string(REPLACE ";" ":" SA_LIVO_TEST_LIBRARY_PATH "${catkin_LIBRARY_DIRS}")
+  set_tests_properties(localization_state_test velodyne_preprocess_test PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CATKIN_DEVEL_PREFIX}/lib:${SA_LIVO_TEST_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}")
+  set_tests_properties(_ctest_sa_livo_rostest_tests_localization_pipeline.test PROPERTIES
+    ENVIRONMENT "PYTHONPATH=${CATKIN_DEVEL_PREFIX}/lib/python3/dist-packages:/opt/ros/noetic/lib/python3/dist-packages:$ENV{PYTHONPATH};LD_LIBRARY_PATH=${CATKIN_DEVEL_PREFIX}/lib:${SA_LIVO_TEST_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH};ROS_PACKAGE_PATH=${CMAKE_SOURCE_DIR}:/opt/ros/noetic/share;ROS_ROOT=/opt/ros/noetic/share/ros;ROS_DISTRO=noetic;ROS_VERSION=1;ROS_HOME=${CMAKE_SOURCE_DIR}/../.ros;ROS_LOG_DIR=${CMAKE_SOURCE_DIR}/../.ros/log;ROS_IP=127.0.0.1;PATH=/opt/ros/noetic/bin:$ENV{PATH}")
   add_executable(adaptive_voxel_map_v2_test tests/adaptive_voxel_map_v2_test.cpp)
   target_include_directories(adaptive_voxel_map_v2_test PRIVATE include)
   target_link_libraries(adaptive_voxel_map_v2_test PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)

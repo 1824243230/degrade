@@ -21,7 +21,7 @@ catkin_make -j2 -l2 \
   -DPYTHON_EXECUTABLE=/usr/bin/python3 \
   -DOpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 \
   -DPCL_DIR=/usr/lib/x86_64-linux-gnu/cmake/pcl \
-  -DEigen3_DIR=/usr/share/eigen3/cmake \
+  -DEigen3_DIR=/usr/lib/cmake/eigen3 \
   -DSophus_DIR="$SA_LIVO_WORKSPACE/.deps/install/share/sophus/cmake" \
   -DCATKIN_ENABLE_TESTING=ON \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "$@"

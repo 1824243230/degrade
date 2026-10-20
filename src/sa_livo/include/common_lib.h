@@ -34,11 +34,16 @@ using Sophus::SE3d;
 using Sophus::SO3d;
 
 #define print_line std::cout << __FILE__ << ", " << __LINE__ << std::endl;
-#define G_m_s2 (9.81)   // Gravaty const in GuangDong/China
+// Process-wide sensor gravity magnitude, configured before IMU processing starts.
+inline double G_m_s2 = 9.81;
 #define DIM_STATE (19)  // Dimension of states (Let Dim(SO(3)) = 3)
 #define INIT_COV (0.01)
 #define SIZE_LARGE (500)
 #define SIZE_SMALL (100)
+// State layout includes an exposure scalar before velocity.
+namespace StateIndex {
+constexpr int Rotation=0, Position=3, Exposure=6, Velocity=7, GyroBias=10, AccBias=13, Gravity=16;
+}
 #define VEC_FROM_ARRAY(v) v[0], v[1], v[2]
 #define MAT_FROM_ARRAY(v) v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]
 #define DEBUG_FILE_DIR(name) (string(string(ROOT_DIR) + "Log/" + name))

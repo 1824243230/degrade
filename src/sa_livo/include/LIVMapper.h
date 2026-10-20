@@ -30,6 +30,10 @@ Further modified for this SA-LIVO reproduction by Huashuijingying, 2026-08.
 #include <sensor_msgs/CompressedImage.h>
 #include "camera_loader.h"
 #include <sophus/se3.hpp>
+#include "localization.h"
+#include <sa_livo/LocalizationStatus.h>
+#include <std_srvs/Trigger.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 struct ColorFrameSnapshot
 {
@@ -59,6 +63,19 @@ public:
   void handleLIO();
   void savePCD();
   void processImu();
+  void readLocalizationParameters();
+  void initializeLocalization();
+  bool processLocalization();
+  void applyRelocalization(const sa_localization::Recovery& recovery);
+  sa_localization::Quality getTrackingQuality(bool visual) const;
+  bool checkLocalizationQuality(bool visual);
+  void publishLocalizationStatus(bool force = false);
+  bool requestRelocalization(std_srvs::Trigger::Request&, std_srvs::Trigger::Response&);
+  void saveMapMetadata(const std::string& pcd_path) const;
+  bool localizationOutputAllowed() const {
+    return !localization_ || (localization_->valid() && !localization_clock_reset_.load() &&
+                              !localization_buffer_overrun_.load());
+  }
   
   bool sync_packages(LidarMeasureGroup &meas);
   void prop_imu_once(StatesGroup &imu_prop_state, const double dt, V3D acc_avr, V3D angvel_avr);
@@ -89,6 +106,20 @@ public:
   cv::Mat getImageFromMsg(const sensor_msgs::Image::ConstPtr &img_msg);
 
   std::mutex mtx_buffer, mtx_buffer_imu_prop;
+  sa_localization::Config localization_config_;
+  std::shared_ptr<sa_localization::PriorMapManager> prior_map_;
+  std::unique_ptr<sa_localization::RelocalizationManager> localization_;
+  ros::Publisher localization_status_pub_, localization_pose_pub_, prior_map_pub_;
+  ros::ServiceServer relocalize_service_;
+  std::string world_frame_="camera_init", localization_base_seq_;
+  unsigned localization_segment_=0;
+  bool localization_lio_only_=false;
+  double localization_status_wall_=-1, last_imu_prop_dt_=0;
+  std::atomic<bool> localization_clock_reset_{false}, direct_localization_pause_{false};
+  std::atomic<bool> localization_buffer_overrun_{false};
+  double localization_ros_time_=-1;
+  sensor_msgs::Imu::ConstPtr localization_boundary_;
+  V3D trusted_acc_bias_=V3D::Zero();
   std::condition_variable sig_buffer;
 
   SLAM_MODE slam_mode_;
@@ -103,6 +134,9 @@ public:
 
   double res_mean_last = 0.05;
   double gyr_cov = 0, acc_cov = 0, inv_expo_cov = 0;
+  double b_gyr_cov = 0.0001, b_acc_cov = 0.0001;
+  bool evaluation_enabled_ = false;
+  std::ofstream evaluation_stream_;
   double blind_rgb_points = 0.0;
   double last_timestamp_lidar = -1.0, last_timestamp_imu = -1.0, last_timestamp_img = -1.0;
   double last_timestamp_img2 = -1.0;

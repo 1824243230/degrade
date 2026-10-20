@@ -159,6 +159,7 @@ public:
 
   VIOManager();
   ~VIOManager();
+  void resetTracking();
   void updateStateInverse(cv::Mat img, int level);
   void updateState(cv::Mat img, int level);
   void processFrame(cv::Mat &img, vector<pointWithVar> &pg, const unordered_map<VOXEL_LOCATION, VoxelOctoTree *> &feat_map, double img_time);

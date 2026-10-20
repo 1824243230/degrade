@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="localization_pipeline" pkg="sa_livo" type="localization_pipeline_test.py" time-limit="90" />
+</launch>
