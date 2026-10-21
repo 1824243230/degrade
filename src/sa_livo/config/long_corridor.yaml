@@ -1,16 +1,76 @@
 # ROS1 SA-LIVO equivalent of the supplied Super-LIO M2DGR configuration.
-# Dataset-specific calibration has NOT been established by this parameter port.
+# Sensor calibration supplied by the user; original values are retained below.
 common:
-  lid_topic: "/velodyne_points"
-  imu_topic: "/handsfree/imu"
-  img_topic: "/camera_1/image_raw"
-  img_en: 0
+  lidar_topic: /livox/avia/lidar
+  imu_topic: /livox/avia/imu
+  image_topic: /camera/color/image_raw/compressed
+  img_en: 1
   lidar_en: 1
   direct_bag_path: ""
 extrin_calib:
-  # T_imu_lidar, as in Super-LIO's g_lidar_imu (lidar in imu frame).
-  extrinsic_T: [0.29, 0.0, 0.84]
-  extrinsic_R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  # p_I = R_IL * p_L + t_IL (laser_to_imu), translation in metres.
+  # Rotations use the same nearest-SO(3) SVD correction as prepare_livo_dataset.py.
+  extrinsic_T: [0.080000000, 0.029000000, 0.030000000]
+  extrinsic_R: [0.999991859723, -0.000516138108, 0.004001760674,
+                0.000519624185, 0.999999486419, -0.000870145088,
+                -0.004001309504, 0.000872217416, 0.999991614344]
+  # p_C = Rcl * p_L + Pcl; T_CL = inverse(T_IC) * T_IL.
+  Rcl: [-0.021100446269, -0.999556884512, 0.020995375478,
+         0.003617225929, -0.021076238708, -0.999771327774,
+         0.999770817160, -0.021019676167, 0.004060341122]
+  Pcl: [0.021313588207, -0.049438882760, -0.099277863986]
+
+# Runtime camera for the rectified /camera_1/image_rect stream, using the same
+# virtual K as prepare_livo_dataset.py: fx = gamma1/(1+xi), fy = gamma2/(1+xi).
+# Distortion has already been removed by rectify_mei_bag; img_en controls use.
+camera:
+  model: Pinhole
+  width: 640
+  height: 480
+  scale: 1.0
+  fx: 295.34859328333215
+  fy: 263.2644677709696
+  cx: 319.6316274499249
+  cy: 235.25773827438545
+  d0: 0.0
+  d1: 0.0
+  d2: 0.0
+  d3: 0.0
+
+# Original calibration for provenance and MEI rectification. The mapper reads
+# extrin_calib and camera above; this block is a reference, not a camera model.
+calibration_reference:
+  laser_to_imu:
+    rows: 4
+    cols: 4
+    data: [0.999212900, -0.000519121, 0.004000000, 0.080000000,
+           0.000516111, 0.999218492, -0.000939132, 0.029000000,
+           -0.004000000, 0.000802565, 0.999993652, 0.030000000,
+           0.000000000, 0.000000000, 0.000000000, 1.000000000]
+  rgb_camera_to_imu:
+    rows: 4
+    cols: 4
+    data: [-0.02050035, -0.00037277, 0.99978978, 0.17967550,
+           -0.99958560, -0.02020440, -0.02050369, 0.04727031,
+           0.02020780, -0.99979580, 0.00004158, -0.01985536,
+           0.00000000, 0.00000000, 0.00000000, 1.00000000]
+  rgb_camera:
+    model_type: MEI
+    camera_name: camera
+    image_width: 640
+    image_height: 480
+    mirror_parameters:
+      xi: 1.507983304667433
+    distortion_parameters:
+      k1: -0.07347781616721441
+      k2: 0.24417387274492433
+      p1: 0.0019232361081336904
+      p2: 0.0014668219651531832
+    projection_parameters:
+      gamma1: 740.729341011609
+      gamma2: 660.2628898817492
+      u0: 319.6316274499249
+      v0: 235.25773827438545
 time_offset:
   imu_time_offset: 0.0
   img_time_offset: 0.0

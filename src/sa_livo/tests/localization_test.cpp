@@ -88,6 +88,15 @@ void mapTests(const Cloud& cloud,const std::filesystem::path& dir) {
   c.tile_stride=41;caught=false;try{c.validate();}catch(const std::exception&){caught=true;}assert(caught);
 }
 void registrationTests(const Cloud& cloud) {
+  {
+    // Point count alone does not imply usable PFH descriptors. Sparse map tiles
+    // must produce no correspondences rather than indexing an empty feature set.
+    kiss_matcher::KISSMatcher sparse_matcher(.3f);
+    std::vector<Eigen::Vector3f> sparse;
+    for(int i=0;i<100;++i) sparse.emplace_back(i*5.f,0.f,0.f);
+    const auto matched=sparse_matcher.match(sparse,sparse);
+    assert(std::get<0>(matched).empty() && std::get<1>(matched).empty());
+  }
   Config config;config.match_timeout=30;
   auto map=std::make_shared<PriorMapManager>(config,metadata(),cloud);
   Eigen::Isometry3d truth=Eigen::Isometry3d::Identity();

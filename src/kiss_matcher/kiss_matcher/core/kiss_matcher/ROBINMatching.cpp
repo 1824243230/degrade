@@ -41,6 +41,11 @@ std::vector<std::pair<int, int>> ROBINMatching::establishCorrespondences(
   corres_cross_checked_.clear();
   corres_.clear();
 
+  // Feature extraction may reject every point in a sparse/featureless tile.
+  // FLANN's index builder accesses data[0], so no index can be built here.
+  if (source_points.empty() || target_points.empty() ||
+      source_features.empty() || target_features.empty()) return corres_;
+
   Feature cloud_features;
   pointcloud_.emplace_back(source_points);
   pointcloud_.emplace_back(target_points);

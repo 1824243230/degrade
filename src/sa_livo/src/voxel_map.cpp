@@ -1042,6 +1042,7 @@ void VoxelMapManager::JointStateEstimation(StatesGroup &state_propagat, const In
       prior_pose_mat = prior_info.template block<6, 6>(0, 0);
     const Eigen::Matrix<double, 6, 6> *prior_pose_info =
         config_setting_.saif_relative_prior_gate_en_ ? &prior_pose_mat : nullptr;
+    lidar_information_last_ = LambdaL.Lambda;
     fused_last_ = saifFuse(LambdaL, LambdaV_iter, q_used, sigma_min_eff, prior_pose_info);
 
     if (iter == 0 && vis_info != nullptr)

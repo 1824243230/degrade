@@ -4,6 +4,7 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/Image.h>
 #include <velodyne_pointcloud/rawdata.h>
 #include <cmath>
 #include <cstring>
@@ -46,8 +47,8 @@ public:
 int main(int argc, char **argv) {
   ros::init(argc, argv, "decode_velodyne_bag", ros::init_options::AnonymousName | ros::init_options::NoSigintHandler);
   ros::Time::init();  // Standalone rosbag I/O; no NodeHandle or ROS master needed.
-  if (argc != 4) {
-    std::cerr << "Usage: decode_velodyne_bag INPUT.bag OUTPUT.bag VLP16db.yaml\n";
+  if (argc != 4 && !(argc == 5 && std::string(argv[4]) == "--images")) {
+    std::cerr << "Usage: decode_velodyne_bag INPUT.bag OUTPUT.bag VLP16db.yaml [--images]\n";
     return 2;
   }
   const std::filesystem::path output(argv[2]), temporary(output.string()+".partial");
@@ -64,17 +65,24 @@ int main(int argc, char **argv) {
     XYZIRT points(decoder.scansPerPacket());
     rosbag::Bag input(argv[1], rosbag::bagmode::Read), result(temporary.string(), rosbag::bagmode::Write);
     result.setCompression(rosbag::compression::LZ4);
-    rosbag::View records(input, rosbag::TopicQuery(std::vector<std::string>{"/velodyne_packets", "/imu/data"}));
-    size_t scans=0, imus=0, count=0;
+    const bool keep_images=argc==5;
+    std::vector<std::string> topics={"/velodyne_packets", "/imu/data"};
+    if(keep_images) topics.push_back("/camera_1/image_raw");
+    rosbag::View records(input, rosbag::TopicQuery(topics));
+    size_t scans=0, imus=0, count=0, images=0;
     double last_scan=-1, last_imu=-1, first=std::numeric_limits<double>::infinity(), last=0;
     for (const auto &record : records) {
-      if (record.getTopic()=="/imu/data") {
+      if(record.getTopic()=="/camera_1/image_raw") {
+        const auto image=record.instantiate<sensor_msgs::Image>();
+        if(!image) throw std::runtime_error("Unexpected image message type");
+        result.write("/camera_1/image_raw",image->header.stamp,*image);++images;
+      } else if (record.getTopic()=="/imu/data") {
         const auto imu=record.instantiate<sensor_msgs::Imu>();
         if (!imu) throw std::runtime_error("Unexpected IMU message type");
         const double stamp=imu->header.stamp.toSec();
         if (stamp<=last_imu) throw std::runtime_error("Non-increasing IMU header time");
         last_imu=stamp; first=std::min(first,stamp); last=std::max(last,stamp);
-        result.write("/handsfree/imu", imu->header.stamp, *imu);
+        result.write(keep_images?"/imu/data":"/handsfree/imu", imu->header.stamp, *imu);
         ++imus;
       } else {
         const auto scan=record.instantiate<velodyne_msgs::VelodyneScan>();
@@ -102,7 +110,7 @@ int main(int argc, char **argv) {
     stats << std::setprecision(16) << "{\n  \"scans\": " << scans << ",\n  \"imus\": " << imus
       << ",\n  \"points\": " << count << ",\n  \"start\": " << first << ",\n  \"end\": " << last
       << ",\n  \"min_point_time_s\": " << points.min_time << ",\n  \"max_point_time_s\": " << points.max_time
-      << ",\n  \"model\": \"VLP16\",\n  \"range_m\": [2, 150],\n  \"images_used\": 0,\n"
+      << ",\n  \"model\": \"VLP16\",\n  \"range_m\": [2, 150],\n  \"images_used\": " << images << ",\n"
       << "  \"record_time\": \"sensor header time; original record epoch is different\"\n}\n";
     if (!stats) throw std::runtime_error("Cannot write conversion statistics");
     std::cout << "Decoded scans=" << scans << " imu=" << imus << " points=" << count << '\n';

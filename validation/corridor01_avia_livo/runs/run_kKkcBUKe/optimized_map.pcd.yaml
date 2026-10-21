@@ -1,0 +1,5 @@
+units: m
+frame_id: map
+version: corridor01_avia_run_kKkcBUKe_1792609832578952311
+calibration_id: corridor01_avia_c25d1df4ae0124c288110db903290abac28c93bc13342b6c97b3f168ecdc6394
+gravity: [-0.4180309731467755, -0.1053020659578291, -9.793484233411773]

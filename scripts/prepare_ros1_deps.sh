@@ -28,3 +28,4 @@ cmake -S .deps/src/Livox-SDK2 -B .deps/build/Livox-SDK2 \
 cmake --build .deps/build/Livox-SDK2 --target install -j2
 bash scripts/prepare_livox_ros1.sh
 bash scripts/prepare_kiss_matcher_ros1.sh
+bash scripts/prepare_ceres_ros1.sh

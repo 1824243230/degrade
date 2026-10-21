@@ -8,6 +8,7 @@
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <numeric>
+#include <sstream>
 
 namespace sa_localization {
 namespace {
@@ -121,6 +122,10 @@ MatchResult KissRelocalizer::match(const Cloud& source, const PriorMapManager& m
     return (center(a)-*hint).squaredNorm() < (center(b)-*hint).squaredNorm();
   });
   std::vector<MatchResult> candidates;
+  size_t correspondence_candidates=0, solved_candidates=0, gravity_candidates=0;
+  size_t best_correspondences=0, best_solver_inliers=0, best_inliers=0;
+  double best_overlap=0;
+  std::string last_refinement_failure;
   struct Search { Cloud::ConstPtr target; int depth; };
   std::vector<Search> searches;
   for(size_t index:order) searches.push_back({map.tiles()[index],0});
@@ -133,12 +138,16 @@ MatchResult KissRelocalizer::match(const Cloud& source, const PriorMapManager& m
     auto matched = matcher.match(source_points, points(*tile));
     const auto& source_matches = std::get<0>(matched);
     const auto& target_matches = std::get<1>(matched);
+    best_correspondences=std::max(best_correspondences,source_matches.size());
     if (source_matches.size() < size_t(config_.min_inliers)) continue;
+    ++correspondence_candidates;
     Eigen::Matrix<double,3,Eigen::Dynamic> s(3,source_matches.size()), t(3,target_matches.size());
     for (size_t i=0;i<source_matches.size();++i) { s.col(i)=source_matches[i].cast<double>(); t.col(i)=target_matches[i].cast<double>(); }
     matcher.resetSolver();
     const auto solution = matcher.solve(s,t);
+    best_solver_inliers=std::max(best_solver_inliers,matcher.getNumFinalInliers());
     if (!solution.valid || matcher.getNumFinalInliers() < size_t(config_.min_inliers)) continue;
+    ++solved_candidates;
     Eigen::Isometry3d guess = Eigen::Isometry3d::Identity();
     guess.linear() = solution.rotation;
     guess.translation() = solution.translation;
@@ -146,8 +155,11 @@ MatchResult KissRelocalizer::match(const Cloud& source, const PriorMapManager& m
     const double alignment = std::max(-1.0, std::min(1.0,
       (guess.linear() * gravity_lidar.normalized()).dot(map.metadata().gravity.normalized())));
     if (std::acos(alignment) > config_.gravity_max_deg * kPi / 180.) continue;
+    ++gravity_candidates;
     auto candidate = refine(source, map.cloud(), guess);
-    if (!candidate.success) continue;
+    best_inliers=std::max(best_inliers,size_t(candidate.inliers));
+    best_overlap=std::max(best_overlap,candidate.overlap);
+    if (!candidate.success) { last_refinement_failure=candidate.reason; continue; }
     const double final_alignment = std::max(-1.0, std::min(1.0,
       (candidate.T_map_lidar.linear()*gravity_lidar.normalized()).dot(map.metadata().gravity.normalized())));
     if (std::acos(final_alignment) > config_.gravity_max_deg * kPi / 180.) continue;
@@ -180,7 +192,16 @@ MatchResult KissRelocalizer::match(const Cloud& source, const PriorMapManager& m
     }
   }
   if (expired()) { failure.reason = "global search cancelled or timed out"; return failure; }
-  if (candidates.empty()) return failure;
+  if (candidates.empty()) {
+    std::ostringstream reason;
+    reason<<failure.reason<<": tiles="<<searches.size()<<", query="<<source_points.size()
+      <<", best_correspondences="<<best_correspondences<<", correspondence_candidates="<<correspondence_candidates
+      <<", solved="<<solved_candidates<<", gravity_pass="<<gravity_candidates
+      <<", best_solver_inliers="<<best_solver_inliers
+      <<", best_inliers="<<best_inliers<<", best_overlap="<<best_overlap;
+    if(!last_refinement_failure.empty()) reason<<", refinement="<<last_refinement_failure;
+    failure.reason=reason.str();return failure;
+  }
   std::sort(candidates.begin(),candidates.end(),[](const MatchResult& a,const MatchResult& b) {
     return a.overlap > b.overlap || (a.overlap == b.overlap && a.rmse < b.rmse);
   });

@@ -11,7 +11,7 @@ endif()
 find_package(catkin REQUIRED COMPONENTS
   roscpp rosbag sensor_msgs geometry_msgs nav_msgs visualization_msgs std_msgs
   tf2_ros tf2_geometry_msgs pcl_ros pcl_conversions cv_bridge image_transport
-  livox_ros_driver2 vikit_common std_srvs message_generation)
+  livox_ros_driver2 vikit_common btc_desc std_srvs message_generation)
 add_message_files(FILES LocalizationStatus.msg)
 generate_messages(DEPENDENCIES std_msgs)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -19,8 +19,9 @@ find_package(PCL 1.10 REQUIRED COMPONENTS common io filters kdtree)
 find_package(kiss_matcher REQUIRED CONFIG)
 find_package(small_gicp REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED)
-find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc imgcodecs calib3d highgui)
+find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc imgcodecs calib3d highgui ccalib)
 find_package(Sophus 1.22.10 REQUIRED CONFIG)
+find_package(Ceres 2.1.0 EXACT REQUIRED)
 get_target_property(Eigen3_INCLUDE_DIRS Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(Sophus_INCLUDE_DIRS Sophus::Sophus INTERFACE_INCLUDE_DIRECTORIES)
 find_package(OpenMP REQUIRED)
@@ -34,7 +35,7 @@ catkin_package(
   LIBRARIES vio lio pre imu_proc laser_mapping utils saif sa_vio localization
   CATKIN_DEPENDS roscpp rosbag sensor_msgs geometry_msgs nav_msgs visualization_msgs
     std_msgs tf2_ros tf2_geometry_msgs pcl_ros pcl_conversions cv_bridge
-    image_transport livox_ros_driver2 vikit_common std_srvs message_runtime
+    image_transport livox_ros_driver2 vikit_common btc_desc std_srvs message_runtime
   DEPENDS Eigen3 PCL OpenCV Sophus)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -63,7 +64,11 @@ add_library(localization src/localization_map.cpp src/localization_manager.cpp s
 target_link_libraries(localization PUBLIC Eigen3::Eigen ${PCL_LIBRARIES} Threads::Threads
   PRIVATE kiss_matcher::kiss_matcher_core small_gicp::small_gicp yaml-cpp TBB::tbb)
 set_target_properties(localization PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
-add_library(laser_mapping src/LIVMapper.cpp src/LIVMapperLocalization.cpp)
+add_library(loop_geometry src/loop_geometry.cpp)
+target_link_libraries(loop_geometry PUBLIC Eigen3::Eigen Ceres::ceres ${PCL_LIBRARIES})
+add_library(loop_closure src/loop_closure.cpp)
+target_link_libraries(loop_closure PUBLIC loop_geometry btc_core ${catkin_LIBRARIES} Threads::Threads)
+add_library(laser_mapping src/LIVMapper.cpp src/LIVMapperLocalization.cpp src/LIVMapperLoop.cpp)
 target_link_libraries(saif PUBLIC Eigen3::Eigen)
 foreach(target lio vio pre imu_proc sa_vio laser_mapping)
   target_link_libraries(${target} PUBLIC ${roscpp_LIBRARIES} ${rosbag_LIBRARIES}
@@ -77,7 +82,7 @@ target_link_libraries(vio PUBLIC lio)
 target_link_libraries(pre PUBLIC utils)
 target_link_libraries(imu_proc PUBLIC utils)
 target_link_libraries(sa_vio PUBLIC saif)
-target_link_libraries(laser_mapping PUBLIC vio lio sa_vio pre imu_proc localization ${Boost_LIBRARIES})
+target_link_libraries(laser_mapping PUBLIC vio lio sa_vio pre imu_proc localization loop_closure ${Boost_LIBRARIES})
 
 add_executable(fastlivo_mapping src/main.cpp)
 target_link_libraries(fastlivo_mapping PRIVATE laser_mapping)
@@ -85,11 +90,15 @@ add_dependencies(fastlivo_mapping ${catkin_EXPORTED_TARGETS})
 add_executable(decode_velodyne_bag src/decode_velodyne_bag.cpp)
 target_include_directories(decode_velodyne_bag PRIVATE ${velodyne_pointcloud_INCLUDE_DIRS})
 target_link_libraries(decode_velodyne_bag PRIVATE ${velodyne_pointcloud_LIBRARIES} ${rosbag_LIBRARIES})
+add_executable(rectify_mei_bag src/rectify_mei_bag.cpp)
+target_include_directories(rectify_mei_bag PRIVATE ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(rectify_mei_bag PRIVATE ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} yaml-cpp)
+add_dependencies(rectify_mei_bag ${catkin_EXPORTED_TARGETS})
 if(mimalloc_FOUND)
   target_link_libraries(fastlivo_mapping PRIVATE mimalloc)
 endif()
 
-install(TARGETS fastlivo_mapping decode_velodyne_bag utils saif lio vio pre imu_proc sa_vio laser_mapping localization
+install(TARGETS fastlivo_mapping decode_velodyne_bag rectify_mei_bag utils saif lio vio pre imu_proc sa_vio laser_mapping localization loop_geometry loop_closure
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
@@ -97,11 +106,27 @@ install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 install(DIRECTORY config launch rviz_cfg DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 if(CATKIN_ENABLE_TESTING)
+  add_executable(sparse_voxel_filter_test tests/sparse_voxel_filter_test.cpp)
+  target_link_libraries(sparse_voxel_filter_test PRIVATE ${PCL_LIBRARIES})
+  target_compile_options(sparse_voxel_filter_test PRIVATE -UNDEBUG)
+  add_test(NAME sparse_voxel_filter_test COMMAND sparse_voxel_filter_test)
+  add_test(NAME livo_dataset_test COMMAND /usr/bin/python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/livo_dataset_test.py)
+  set_tests_properties(livo_dataset_test PROPERTIES ENVIRONMENT
+    "PYTHONPATH=${CATKIN_DEVEL_PREFIX}/lib/python3/dist-packages:/opt/ros/noetic/lib/python3/dist-packages:$ENV{PYTHONPATH}")
+  add_executable(loop_geometry_test tests/loop_geometry_test.cpp)
+  target_link_libraries(loop_geometry_test PRIVATE loop_geometry btc_core)
+  target_compile_options(loop_geometry_test PRIVATE -UNDEBUG)
+  add_test(NAME loop_geometry_test COMMAND loop_geometry_test)
+  add_executable(loop_backend_test tests/loop_backend_test.cpp)
+  find_package(GTest REQUIRED)
+  target_link_libraries(loop_backend_test PRIVATE loop_closure GTest::GTest)
+  target_compile_options(loop_backend_test PRIVATE -UNDEBUG)
   add_executable(velodyne_preprocess_test tests/velodyne_preprocess_test.cpp)
   target_link_libraries(velodyne_preprocess_test PRIVATE pre imu_proc)
   target_compile_options(velodyne_preprocess_test PRIVATE -UNDEBUG)
   add_test(NAME velodyne_preprocess_test COMMAND velodyne_preprocess_test)
   find_package(rostest REQUIRED)
+  add_rostest(tests/loop_backend.test)
   catkin_install_python(PROGRAMS tests/localization_pipeline_test.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
   add_rostest(tests/localization_pipeline.test)
@@ -119,6 +144,8 @@ if(CATKIN_ENABLE_TESTING)
     ENVIRONMENT "LD_LIBRARY_PATH=${CATKIN_DEVEL_PREFIX}/lib:${SA_LIVO_TEST_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}")
   set_tests_properties(_ctest_sa_livo_rostest_tests_localization_pipeline.test PROPERTIES
     ENVIRONMENT "PYTHONPATH=${CATKIN_DEVEL_PREFIX}/lib/python3/dist-packages:/opt/ros/noetic/lib/python3/dist-packages:$ENV{PYTHONPATH};LD_LIBRARY_PATH=${CATKIN_DEVEL_PREFIX}/lib:${SA_LIVO_TEST_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH};ROS_PACKAGE_PATH=${CMAKE_SOURCE_DIR}:/opt/ros/noetic/share;ROS_ROOT=/opt/ros/noetic/share/ros;ROS_DISTRO=noetic;ROS_VERSION=1;ROS_HOME=${CMAKE_SOURCE_DIR}/../.ros;ROS_LOG_DIR=${CMAKE_SOURCE_DIR}/../.ros/log;ROS_IP=127.0.0.1;PATH=/opt/ros/noetic/bin:$ENV{PATH}")
+  set_tests_properties(_ctest_sa_livo_rostest_tests_loop_backend.test PROPERTIES
+    ENVIRONMENT "PYTHONPATH=${CATKIN_DEVEL_PREFIX}/lib/python3/dist-packages:/opt/ros/noetic/lib/python3/dist-packages:$ENV{PYTHONPATH};LD_LIBRARY_PATH=${CATKIN_DEVEL_PREFIX}/lib:${CMAKE_SOURCE_DIR}/../.deps/install/lib:${SA_LIVO_TEST_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH};ROS_PACKAGE_PATH=${CMAKE_SOURCE_DIR}:/opt/ros/noetic/share;ROS_ROOT=/opt/ros/noetic/share/ros;ROS_DISTRO=noetic;ROS_VERSION=1;ROS_HOME=${CMAKE_SOURCE_DIR}/../.ros;ROS_LOG_DIR=${CMAKE_SOURCE_DIR}/../.ros/log;ROS_IP=127.0.0.1;PATH=/opt/ros/noetic/bin:$ENV{PATH}")
   add_executable(adaptive_voxel_map_v2_test tests/adaptive_voxel_map_v2_test.cpp)
   target_include_directories(adaptive_voxel_map_v2_test PRIVATE include)
   target_link_libraries(adaptive_voxel_map_v2_test PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)

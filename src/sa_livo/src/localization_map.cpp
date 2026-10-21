@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "localization.h"
+#include "sparse_voxel_filter.h"
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/common/common.h>
 #include <pcl/conversions.h>
@@ -67,12 +68,7 @@ Cloud filteredCloud(const Cloud& input, double resolution, double radius) {
     if (p.allFinite() && (radius <= 0 || p.squaredNorm() <= radius * radius)) finite->push_back(point);
   }
   if (finite->empty()) return *finite;
-  pcl::VoxelGrid<pcl::PointXYZ> filter;
-  filter.setLeafSize(resolution, resolution, resolution);
-  filter.setInputCloud(finite);
-  Cloud result;
-  filter.filter(result);
-  return result;
+  return sa_livo::sparseVoxelFilter(*finite, resolution);
 }
 PriorMapManager::PriorMapManager(const Config& config, const MapMetadata& metadata, const Cloud& input)
     : metadata_(metadata) {

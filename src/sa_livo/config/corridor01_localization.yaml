@@ -1,0 +1,9 @@
+# Overrides for the confirmed Corridor01 Avia IMU; other gates use localization.yaml.
+localization:
+  # Same measured stationary IMU noise allowance as the Corridor01 LIVO profile.
+  acc_std_max: 0.30
+  # The opening Avia view is only a few metres deep. A 0.3 m query grid left
+  # about 106 points / 8 correspondences; retain near-field surface detail.
+  kiss_resolution: 0.15
+  fine_resolution: 0.15
+  match_timeout: 120.0

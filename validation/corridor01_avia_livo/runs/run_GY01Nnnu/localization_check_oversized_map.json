@@ -1,0 +1,10 @@
+{
+  "map_path": "/home/hyh/salivo/validation/corridor01_avia_livo/runs/run_GY01Nnnu/optimized_map.pcd",
+  "initial_tracking": false,
+  "manual_relocalization_requested": false,
+  "recovered_after_request": false,
+  "elapsed_seconds": 63.989669451000736,
+  "state_counts": {},
+  "last_statuses": [],
+  "logs": "/tmp/salivo-corridor01-localization-96swj2yy"
+}

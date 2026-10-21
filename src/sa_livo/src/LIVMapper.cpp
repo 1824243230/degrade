@@ -69,6 +69,7 @@ LIVMapper::LIVMapper(const ros::NodeHandle &nh, const ros::NodeHandle &pnh)
   initializeFiles();
   initializeComponents(this->node);
   initializeLocalization();
+  initializeLoopClosure();
   path.header.stamp = ros::Time::now();
   path.header.frame_id = world_frame_;
 }
@@ -180,6 +181,8 @@ void LIVMapper::readParameters(ros::NodeHandle &node)
   if (!std::isfinite(G_m_s2) || G_m_s2 < 1 || G_m_s2 > 20)
     throw std::invalid_argument("imu/gravity_norm must be finite and between 1 and 20 m/s^2");
   readRosParam<bool>(node, "evaluation/enabled", evaluation_enabled_, false);
+  readRosParam<std::string>(node, "evaluation/output_dir", evaluation_output_dir_, "");
+  readRosParam<std::string>(node, "common/image_valid_mask", image_valid_mask_, "");
   readRosParam<int>(node, "imu/imu_int_frame", imu_int_frame, 30);
   {
     bool stationary_init=false;
@@ -1054,6 +1057,7 @@ void LIVMapper::handleVIO()
   fout_out << std::setw(20) << LidarMeasures.last_lio_update_time - _first_lidar_time << " " << euler_cur.transpose() * 57.3 << " "
             << _state.pos_end.transpose() << " " << _state.vel_end.transpose() << " " << _state.bias_g.transpose() << " "
             << _state.bias_a.transpose() << " " << V3D(_state.inv_expo_time, 0, 0).transpose() << " " << feats_undistort->points.size() << std::endl;
+  recordLivoFrame(LambdaV, q, (omp_get_wtime()-t0)*1000.0);
 }
 
 void LIVMapper::handleLIO() 
@@ -1348,6 +1352,14 @@ void LIVMapper::run()
       {
         std::lock_guard<std::mutex> lock(mtx_buffer);
         if (lid_raw_data_buffer.empty() || imu_buffer.empty()) break;
+        double scan_end=lid_header_time_buffer.front();
+        for(const auto& point:*lid_raw_data_buffer.front())
+          if(std::isfinite(point.curvature))
+            scan_end=std::max(scan_end,lid_header_time_buffer.front()+double(point.curvature)/1000.);
+        if(last_timestamp_imu<scan_end) {
+          ROS_WARN("[ DIRECT BAG ] trailing LiDAR scan has no IMU coverage; replay finished");
+          break;
+        }
       }
       rate.sleep();
       continue;
@@ -1400,6 +1412,14 @@ void LIVMapper::run()
   }
   direct_stop_ = true;
   if (direct_feeder.joinable()) direct_feeder.join();
+  if (loop_backend_) {
+    loop_backend_->finish();
+    const auto optimized_map = evaluation_output_dir_ + "/optimized_map.pcd";
+    if (!p_imu->imu_need_init && std::filesystem::exists(optimized_map))
+      saveMapMetadata(optimized_map);
+  }
+  livo_quality_stream_.flush();
+  livo_trajectory_stream_.flush();
   savePCD();
   if (direct_failed_) throw std::runtime_error("Direct bag replay failed; see the error above.");
 }
@@ -2096,17 +2116,18 @@ void LIVMapper::img_cbk(const sensor_msgs::Image::ConstPtr &msg_in)
   // SA-LIVO/FAST-LIVO2 evaluate at 10 Hz to match the LiDAR scan rate).
   if (img_rate_hz > 0.0)
   {
-    const double period = 1.0 / img_rate_hz;
+    const auto slot = static_cast<long long>(std::floor(msg_header_time*img_rate_hz+1e-6));
     // Keep the first image of each 10 Hz slot.  This path is used for the
     // ~20 Hz Oxford Spires stream; the HILTI 40 Hz stream is sub-sampled to
     // 10 Hz data-side during ROS1->ROS2 conversion, so an already-10 Hz bag
     // must not be run with img_rate_hz set.
-    if (last_img_kept_time_ >= 0.0 && msg_header_time - last_img_kept_time_ < period - 1e-4)
+    if (slot <= image_slot_)
     {
       last_timestamp_img = msg_header_time;
       return;
     }
     last_img_kept_time_ = msg_header_time;
+    image_slot_ = slot;
   }
 
   // Bounded backlog: in-process bag replay can decode frames much faster than

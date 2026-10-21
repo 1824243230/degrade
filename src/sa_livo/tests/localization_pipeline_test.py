@@ -60,6 +60,39 @@ def merge(target, extra):
 
 
 class PipelineTest(unittest.TestCase):
+    def test_direct_bag_exits_without_tail_imu_coverage(self):
+        package=Path(rospkg.RosPack().get_path('sa_livo'))
+        with tempfile.TemporaryDirectory(prefix='sa_livo_tail_') as directory:
+            root=Path(directory); points=scene(); map_path=root/'map.pcd'
+            with map_path.open('wb') as stream:
+                stream.write(('VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\n'
+                    'WIDTH %d\nHEIGHT 1\nPOINTS %d\nDATA binary\n'%(len(points),len(points))).encode())
+                stream.write(points.astype('<f4').tobytes())
+            (root/'map.pcd.yaml').write_text(yaml.safe_dump(dict(units='m',frame_id='map',
+                version='tail-test',calibration_id='tail-test',gravity=[0.,0.,-9.81])))
+            bag_path=root/'tail.bag'
+            imu=Imu();imu.header.stamp=rospy.Time.from_sec(1000.);imu.linear_acceleration.z=9.81
+            scan=pc2.create_cloud_xyz32(Header(stamp=rospy.Time.from_sec(1000.1),frame_id='lidar'),points)
+            with rosbag.Bag(str(bag_path),'w') as bag:
+                bag.write('/test/imu',imu,imu.header.stamp)
+                bag.write('/test/points',scan,scan.header.stamp)
+            params=yaml.safe_load((package/'config/avia.yaml').read_text())
+            merge(params,yaml.safe_load((package/'config/localization.yaml').read_text()))
+            params['common'].update(img_en=0,lid_topic='/test/points',imu_topic='/test/imu',direct_bag_path=str(bag_path))
+            params['preprocess'].update(lidar_type=4,point_filter_num=1,blind=.1)
+            params['localization'].update(map_path=str(map_path),metadata_path=str(map_path)+'.yaml',calibration_id='tail-test')
+            params['evo']['pose_output_en']=False
+            rospy.set_param('/laserMapping',params);rospy.set_param('/use_sim_time',False)
+            executable=roslib.packages.find_node('sa_livo','fastlivo_mapping')[0]
+            with (root/'mapper.log').open('w') as log:
+                process=subprocess.Popen([executable,'__name:=laserMapping'],stdout=log,stderr=subprocess.STDOUT)
+                try:
+                    self.assertEqual(process.wait(timeout=10),0)
+                finally:
+                    if process.poll() is None:
+                        process.kill();process.wait()
+            self.assertIn('trailing LiDAR scan has no IMU coverage',(root/'mapper.log').read_text())
+
     def test_startup_and_recovery_without_camera(self):
         self.run_pipeline(with_camera=False, live=False)
 

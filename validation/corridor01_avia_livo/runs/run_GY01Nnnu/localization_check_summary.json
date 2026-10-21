@@ -1,0 +1,105 @@
+{
+  "map_path": "/home/hyh/salivo/validation/corridor01_avia_livo/runs/run_GY01Nnnu/optimized_map_localization_fine.pcd",
+  "initial_tracking": false,
+  "manual_relocalization_requested": false,
+  "recovered_after_request": false,
+  "elapsed_seconds": 220.70284168200124,
+  "state_counts": {
+    "WAIT_SENSOR": 2,
+    "RELOCALIZING": 600,
+    "WAIT_STATIONARY": 428
+  },
+  "last_statuses": [
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    },
+    {
+      "state": "WAIT_STATIONARY",
+      "valid": false,
+      "reason": "matching task timed out; waiting for worker to finish",
+      "attempt": 3815,
+      "stamp": 0.0,
+      "overlap": 0.0,
+      "rmse": Infinity
+    }
+  ],
+  "logs": "/tmp/salivo-corridor01-localization-ge6jv2lf"
+}

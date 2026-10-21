@@ -1,0 +1,19 @@
+# Confirmed by the user in this implementation session (2026-10-21).
+# This is the original Long Corridor recording, NOT databag/Corridor01.bag.
+bag: Long_Corridor_Rosbag/raw_data_core_2023-07-25-03-01-44.bag
+reference: databag/ground_truth_path.csv
+calibration: databag/传感器标定参数.md
+calibration_confirmed: true
+calibration_source: User confirmed these topics, supplied calibration, and original Long Corridor bag.
+reference_confirmed: true
+reference_note: User supplied reference; accuracy and reference-body to IMU extrinsic not independently measured.
+lidar_kind: velodyne_packets
+lidar_topic: /velodyne_packets
+imu_topic: /imu/data
+image_topic: /camera_1/image_raw
+imu_acc_scale: 1.0
+image_rate_hz: 10.0
+gravity_norm: 9.7946
+# No time offset is fitted against the reference trajectory.
+imu_time_offset: 0.0
+img_time_offset: 0.0

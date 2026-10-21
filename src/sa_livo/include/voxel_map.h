@@ -394,6 +394,7 @@ public:
   std::vector<PointToPlane> ptpl_list_;
 
   FusedInfo6 fused_last_;  // last SAIF output (debug/logging)
+  Eigen::Matrix<double,6,6> lidar_information_last_ = Eigen::Matrix<double,6,6>::Zero();
 
   // Region-grow counters are reset before each residual build. Atomic fields
   // keep diagnostics valid while BuildResidualListOMP uses OpenMP.

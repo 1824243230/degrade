@@ -31,7 +31,7 @@ def rigid_alignment(source, target):
     return rotation, target.mean(0)-rotation @ source.mean(0)
 
 
-def evaluate(trajectory, reference, quality, output):
+def evaluate(trajectory, reference, quality, output, label="SA-LIVO (LiDAR + IMU)"):
     est = np.atleast_2d(np.loadtxt(trajectory))
     ref = np.atleast_2d(np.loadtxt(reference, delimiter=",", skiprows=1))
     if est.shape[1] != 8 or ref.shape[1] != 8 or len(est) < 3 or len(ref) < 3:
@@ -94,13 +94,21 @@ def evaluate(trajectory, reference, quality, output):
             "degenerate_updates": int(np.sum(q["degenerate"] != 0)),
             "map_blocked_updates": int(np.sum(q["map_blocked"] != 0)),
             "matches_median": float(np.median(q["matches"])),
-            "lio_compute_ms": summary(q["lio_ms"]),
+            "compute_ms": summary(q["frontend_ms"] if "frontend_ms" in q.dtype.names else q["lio_ms"]),
+            "lio_compute_ms": summary(q["frontend_ms"] if "frontend_ms" in q.dtype.names else q["lio_ms"]),
             "raw_residual_rms_m": summary(q["raw_rms"]),
         }
+        if "visual_valid" in q.dtype.names:
+            active = (q["visual_valid"] > 0) & (q["q"] > 0) & (q["visual_information_norm"] > 0)
+            metrics["quality"].update(visual_active_frames=int(active.sum()),
+                visual_active_fraction=float(active.mean()), visual_observations=summary(q["visual_valid"]),
+                visual_quality=summary(q["q"]), visual_rms=summary(q["visual_rms"]))
     (output/"metrics.json").write_text(json.dumps(metrics, indent=2, allow_nan=False)+"\n")
     np.savetxt(output/"aligned_trajectory.tum", np.column_stack([e[:, 0], p_aligned, aligned_rotation.as_quat()]), fmt="%.9f")
     np.savetxt(output/"errors.csv", np.column_stack([e[:, 0], errors, angles]), delimiter=",",
                header="timestamp,translation_error_m,rotation_error_deg", comments="")
+    np.savetxt(output/"rpe_1s.csv", np.column_stack([ta+t0, tb+t0, rpe_t, rpe_r]), delimiter=",",
+               header="start_timestamp,end_timestamp,translation_error_m,rotation_error_deg", comments="")
 
     os.environ.setdefault("MPLCONFIGDIR", str(output/".matplotlib"))
     import matplotlib
@@ -108,7 +116,7 @@ def evaluate(trajectory, reference, quality, output):
     import matplotlib.pyplot as plt
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     axes[0].plot(p_ref[:, 0], p_ref[:, 1], label="Provided reference", linewidth=1.5)
-    axes[0].plot(p_aligned[:, 0], p_aligned[:, 1], label="SA-LIVO (LiDAR + IMU)", linewidth=1)
+    axes[0].plot(p_aligned[:, 0], p_aligned[:, 1], label=label, linewidth=1)
     axes[0].set(xlabel="x [m]", ylabel="y [m]", title="Trajectory (SE3 aligned)")
     axes[0].axis("equal"); axes[0].legend(fontsize=8)
     axes[1].plot(te, errors)

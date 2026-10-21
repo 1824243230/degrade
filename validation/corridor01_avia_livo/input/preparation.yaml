@@ -1,0 +1,39 @@
+calibration_confirmed: true
+lidar_topic: /livox/avia/lidar
+imu_topic: /livox/avia/imu
+image_topic: /camera/color/image_raw/compressed
+imu_acc_scale: 1.0
+image_rate_hz: 10.0
+mei:
+  width: 640
+  height: 480
+  K:
+  - 740.729341011609
+  - 0.0
+  - 319.6316274499249
+  - 0.0
+  - 660.2628898817492
+  - 235.25773827438545
+  - 0.0
+  - 0.0
+  - 1.0
+  D:
+  - -0.07347781616721441
+  - 0.24417387274492433
+  - 0.0019232361081336904
+  - 0.0014668219651531832
+  xi:
+  - 1.507983304667433
+virtual_camera:
+  width: 640
+  height: 480
+  K:
+  - 295.34859328333215
+  - 0.0
+  - 319.6316274499249
+  - 0.0
+  - 263.2644677709696
+  - 235.25773827438545
+  - 0.0
+  - 0.0
+  - 1.0

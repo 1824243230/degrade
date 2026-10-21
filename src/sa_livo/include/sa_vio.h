@@ -129,6 +129,7 @@ public:
   // p_L = Rli·p_I + Pli, p_C = Rcl·p_L + Pcl, therefore
   // p_C = Rci·p_I + Pci with Rci = Rcl·Rli, Pci = Rcl·Pli + Pcl.
   void setCamera(vk::AbstractCamera *cam) { cam_ = cam; }
+  void setValidMask(const cv::Mat &mask) { valid_mask_ = mask.clone(); }
   void setExtrinsics(const M3D &Rli, const V3D &Pli, const M3D &Rcl, const V3D &Pcl)
   {
     Rli_ = Rli;
@@ -185,6 +186,7 @@ public:
   V3F getInterpolatedPixelForViz(const cv::Mat &img, const V2D &pc) const;
 
 private:
+  cv::Mat valid_mask_;
   void toGray(const cv::Mat &in, cv::Mat &out);
   double sampleBilinear(const cv::Mat &img, double x, double y) const;
   void sampleCross(const cv::Mat &img, const V2D &px, std::array<float, SA_PATCH_NUM> &vals) const;

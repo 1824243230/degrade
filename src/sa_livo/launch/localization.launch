@@ -5,17 +5,26 @@
   <arg name="sensor_params_file" default="$(find sa_livo)/config/avia.yaml" />
   <arg name="camera_params_file" default="$(find sa_livo)/config/camera_pinhole.yaml" />
   <arg name="localization_params_file" default="$(find sa_livo)/config/localization.yaml" />
+  <arg name="localization_overrides_file" default="" />
   <arg name="direct_bag_path" default="" />
   <arg name="use_sim_time" default="false" />
+  <arg name="use_rviz" default="false" />
+  <arg name="output_dir" default="$(find sa_livo)/Log/result/localization/$(anon run)" />
   <param name="use_sim_time" value="$(arg use_sim_time)" />
   <node pkg="sa_livo" type="fastlivo_mapping" name="laserMapping" output="screen" required="true">
     <rosparam command="load" file="$(arg sensor_params_file)" />
     <rosparam command="load" file="$(arg camera_params_file)" />
     <rosparam command="load" file="$(arg localization_params_file)" />
+    <rosparam if="$(eval arg('localization_overrides_file') != '')" command="load"
+              file="$(arg localization_overrides_file)" />
     <param name="localization/enabled" value="true" />
+    <param name="loop_closure/enabled" value="false" />
+    <param name="evaluation/output_dir" value="$(arg output_dir)" type="str" />
     <param name="localization/map_path" value="$(arg map_path)" type="str" />
     <param name="localization/metadata_path" value="$(arg metadata_path)" type="str" />
     <param name="localization/calibration_id" value="$(arg calibration_id)" type="str" />
     <param name="common/direct_bag_path" value="$(arg direct_bag_path)" type="str" />
   </node>
+  <node if="$(arg use_rviz)" pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find sa_livo)/rviz_cfg/fast_livo2.rviz -f map" />
 </launch>

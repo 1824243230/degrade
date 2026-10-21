@@ -252,13 +252,13 @@ Visualization Manager:
     Enabled: true
     Name: Marker
     Namespaces: {}
-    Topic: /planner_normal
+    Marker Topic: /planner_normal
     Value: true
   - Class: rviz/MarkerArray
     Enabled: false
     Name: MarkerArray
     Namespaces: {}
-    Topic: visualization_marker_array
+    Marker Topic: /voxels
     Value: false
   - Alpha: 1
     Autocompute Intensity Bounds: true
@@ -292,7 +292,7 @@ Visualization Manager:
     Enabled: false
     Name: MarkerArray
     Namespaces: {}
-    Topic: visualization_marker_array
+    Marker Topic: /visualization_marker
     Value: false
   - Alpha: 1
     Autocompute Intensity Bounds: true
@@ -471,20 +471,69 @@ Visualization Manager:
     Enabled: false
     Name: MarkerArray
     Namespaces: {}
-    Topic: visualization_marker_array
+    Marker Topic: visualization_marker_array
     Value: false
   - Class: rviz/MarkerArray
     Enabled: true
     Name: MarkerArray
     Namespaces: {}
-    Topic: visualization_marker_array
+    Marker Topic: visualization_marker_array
     Value: true
   - Class: rviz/MarkerArray
     Enabled: false
     Name: MarkerArray
     Namespaces: {}
-    Topic: visualization_marker_array
+    Marker Topic: visualization_marker_array
     Value: false
+  - Class: rviz/Group
+    Enabled: true
+    Name: Loop Closure
+    Displays:
+    - Class: rviz/Path
+      Enabled: true
+      Name: Optimized Path
+      Topic: /loop_closure/path
+      Color: 255; 170; 0
+      Alpha: 1
+      Buffer Length: 1
+      Line Style: Lines
+      Line Width: 0.04
+      Pose Style: None
+      Value: true
+    - Class: rviz/PointCloud2
+      Enabled: true
+      Name: Optimized Map
+      Topic: /loop_closure/map
+      Alpha: 1
+      Color Transformer: Intensity
+      Position Transformer: XYZ
+      Style: Points
+      Size (Pixels): 2
+      Size (m): 0.02
+      Decay Time: 0
+      Queue Size: 1
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Accepted Loops
+      Marker Topic: /loop_closure/markers
+      Namespaces: {}
+      Queue Size: 1
+      Value: true
+  - Class: rviz/PointCloud2
+    Enabled: true
+    Name: Prior Map
+    Topic: /localization/prior_map
+    Alpha: 0.35
+    Color Transformer: FlatColor
+    Color: 160; 160; 160
+    Position Transformer: XYZ
+    Style: Points
+    Size (Pixels): 2
+    Size (m): 0.02
+    Decay Time: 0
+    Queue Size: 1
+    Value: true
   - Class: rviz/Image
     Enabled: true
     Max Value: 1
@@ -541,7 +590,7 @@ Visualization Manager:
       Name: Current View
       Near Clip Distance: 0.009999999776482582
       Pitch: 0.3547965884208679
-      Target Frame: drone
+      Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz_default_plugins)
       Yaw: 2.5417795181274414
     Saved:

@@ -1,0 +1,27 @@
+{
+  "elapsed_seconds": 987.505474998,
+  "output_dir": "/home/hyh/salivo/validation/corridor01_avia_livo/runs/run_GY01Nnnu",
+  "backend": {
+    "submaps": 355,
+    "loop_edges": 19,
+    "skipped_frames": 0,
+    "max_queue": 32,
+    "frames": 4026,
+    "finished": true
+  },
+  "frontend_frames": 4026,
+  "nonfinite_updates": 0,
+  "visual_active_frames": 182,
+  "direct_bag_finished": "imu=82126 lidar=4038 img=4040",
+  "map_metadata": {
+    "units": "m",
+    "frame_id": "map",
+    "version": "corridor01_avia_run_GY01Nnnu_1792605603908862043",
+    "calibration_id": "corridor01_avia_c25d1df4ae0124c288110db903290abac28c93bc13342b6c97b3f168ecdc6394",
+    "gravity": [
+      -0.4876071382423617,
+      -0.1118377327603268,
+      -9.787694039418515
+    ]
+  }
+}

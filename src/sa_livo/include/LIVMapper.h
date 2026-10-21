@@ -31,6 +31,7 @@ Further modified for this SA-LIVO reproduction by Huashuijingying, 2026-08.
 #include "camera_loader.h"
 #include <sophus/se3.hpp>
 #include "localization.h"
+#include "loop_closure.h"
 #include <sa_livo/LocalizationStatus.h>
 #include <std_srvs/Trigger.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -100,6 +101,8 @@ public:
   void publish_mavros(const ros::Publisher &mavros_pose_publisher);
   void publish_path(const ros::Publisher &pubPath);
   void readParameters(ros::NodeHandle &node);
+  void initializeLoopClosure();
+  void recordLivoFrame(const InfoForm6 &visual, double quality, double elapsed_ms);
   template <typename T> void set_posestamp(T &out);
   template <typename T> void pointBodyToWorld(const Eigen::Matrix<T, 3, 1> &pi, Eigen::Matrix<T, 3, 1> &po);
   template <typename T> Eigen::Matrix<T, 3, 1> pointBodyToWorld(const Eigen::Matrix<T, 3, 1> &pi);
@@ -137,6 +140,11 @@ public:
   double b_gyr_cov = 0.0001, b_acc_cov = 0.0001;
   bool evaluation_enabled_ = false;
   std::ofstream evaluation_stream_;
+  std::string evaluation_output_dir_;
+  std::ofstream livo_quality_stream_, livo_trajectory_stream_;
+  std::unique_ptr<sa_loop::LoopClosureBackend> loop_backend_;
+  std::string image_valid_mask_;
+  long long image_slot_ = -1;
   double blind_rgb_points = 0.0;
   double last_timestamp_lidar = -1.0, last_timestamp_imu = -1.0, last_timestamp_img = -1.0;
   double last_timestamp_img2 = -1.0;

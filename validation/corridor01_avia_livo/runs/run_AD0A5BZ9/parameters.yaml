@@ -1,0 +1,139 @@
+common:
+  img_topic: /camera_1/image_rect
+  lid_topic: /livox/lidar
+  imu_topic: /imu/data
+  direct_bag_path: ''
+  img_en: 1
+  lidar_en: 1
+  ros_driver_bug_fix: false
+  img_compressed_en: false
+  img_rate_hz: 10.0
+  img_buffer_max: 20
+  image_valid_mask: /home/hyh/salivo/validation/corridor01_avia_livo/input/valid_mask.png
+extrin_calib:
+  extrinsic_T:
+  - 0.08
+  - 0.029
+  - 0.03
+  extrinsic_R:
+  - 0.9999918597233481
+  - -0.0005161381080031613
+  - 0.004001760674214563
+  - 0.0005196241852029049
+  - 0.9999994864189844
+  - -0.0008701450879252948
+  - -0.004001309503946813
+  - 0.0008722174163333235
+  - 0.9999916143443563
+  Rcl:
+  - -0.02110044626913788
+  - -0.9995568845122134
+  - 0.020995375478430108
+  - 0.003617225928887208
+  - -0.02107623870833015
+  - -0.9997713277737504
+  - 0.9997708171595243
+  - -0.021019676166546916
+  - 0.004060341122476072
+  Pcl:
+  - 0.021313588206502393
+  - -0.049438882760427974
+  - -0.09927786398608703
+time_offset:
+  imu_time_offset: 0.0
+  img_time_offset: 0.0
+  exposure_time_init: 0.0
+preprocess:
+  point_filter_num: 1
+  filter_size_surf: 0.1
+  lidar_type: 1
+  scan_line: 6
+  blind: 0.8
+vio:
+  max_iterations: 5
+  outlier_threshold: 1000
+  img_point_cov: 100
+  patch_size: 8
+  patch_pyrimid_level: 4
+  normal_en: true
+  raycast_en: false
+  inverse_composition_en: false
+  exposure_estimate_en: true
+  inv_expo_cov: 0.1
+imu:
+  imu_en: true
+  imu_int_frame: 30
+  acc_cov: 0.5
+  gyr_cov: 0.3
+  b_acc_cov: 0.0001
+  b_gyr_cov: 0.0001
+  gravity_norm: 9.81
+  stationary_init: true
+  stationary_duration: 1.0
+  stationary_gyro_max: 0.05
+  stationary_acc_std: 0.3
+lio:
+  max_iterations: 5
+  dept_err: 0.02
+  beam_err: 0.05
+  min_eigen_value: 0.0025
+  voxel_size: 0.3
+  max_layer: 2
+  max_points_num: 50
+  layer_init_num:
+  - 5
+  - 5
+  - 5
+  - 5
+  - 5
+  adaptive_support_en: true
+  n_pca: 25
+  planarity_ratio_th: 0.05
+  min_eigen_abs: 0.01
+  freeze_min_points: 50
+  chi2_thres: 9.0
+  multi_scale_en: true
+  scale1_radius: 2.0
+  max_shell: 6
+saif:
+  sigma_min: 1.0
+  eps_pose_inflate: 0.01
+  conv_phi_deg: 0.01
+  conv_p_cm: 0.015
+sa_vio:
+  dual_event_en: false
+  window_size: 5
+  min_obs: 30
+  max_obs_per_frame: 100
+  patch_spacing: 8
+  depth_min: 0.5
+  theta_max_deg: 80.0
+  parallax_min_px: 0.5
+  abs_res_max: 15.0
+  chi2_thres: 6.635
+  sigma_px: 1.0
+  info_scale: 1.0
+local_map:
+  map_sliding_en: false
+  half_map_size: 100
+  sliding_thresh: 8.0
+uav:
+  imu_rate_odom: false
+  gravity_align_en: false
+publish:
+  dense_map_en: true
+  pub_effect_point_en: false
+  pub_plane_en: false
+  pub_scan_num: 1
+  blind_rgb_points: 0.0
+evo:
+  seq_name: corridor01_avia_run_AD0A5BZ9
+  pose_output_en: true
+pcd_save:
+  pcd_save_en: false
+  color_delay_frames: -1
+  color_prev_mix: 0.2
+  color_blur_sigma: 0.0
+  colmap_output_en: false
+  filter_size_pcd: 0.15
+  interval: -1

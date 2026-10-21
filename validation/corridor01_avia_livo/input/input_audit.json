@@ -1,0 +1,53 @@
+{
+  "bag": "/home/hyh/salivo/../lidarbag/\u5176\u4ed6\u5305/Corridor01.bag",
+  "available_topics": [
+    "/camera/aligned_depth_to_color/image_raw/compressedDepth",
+    "/camera/color/image_raw/compressed",
+    "/camera/imu",
+    "/cv_camera/image_raw/compressed",
+    "/livox/avia/imu",
+    "/livox/avia/lidar",
+    "/livox/mid360/imu",
+    "/livox/mid360/lidar",
+    "/odom"
+  ],
+  "missing_topics": [],
+  "streams": {
+    "/camera/color/image_raw/compressed": {
+      "count": 12108,
+      "first": 1737471526.0913386,
+      "last": 1737471929.9434276,
+      "backwards": 0,
+      "duplicates": 0,
+      "max_gap": 0.0345158576965332,
+      "types": [
+        "sensor_msgs/CompressedImage"
+      ]
+    },
+    "/livox/avia/imu": {
+      "count": 82126,
+      "first": 1737471526.1629264,
+      "last": 1737471929.9601784,
+      "backwards": 0,
+      "duplicates": 0,
+      "max_gap": 0.005111217498779297,
+      "types": [
+        "sensor_msgs/Imu"
+      ]
+    },
+    "/livox/avia/lidar": {
+      "count": 4038,
+      "first": 1737471526.1606042,
+      "last": 1737471929.8609383,
+      "backwards": 0,
+      "duplicates": 0,
+      "max_gap": 0.10066485404968262,
+      "types": [
+        "livox_ros_driver/CustomMsg"
+      ]
+    }
+  },
+  "sensor_time_source": "header.stamp",
+  "reference": null,
+  "valid": true
+}

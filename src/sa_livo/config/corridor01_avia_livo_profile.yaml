@@ -1,0 +1,21 @@
+# User confirmed this sensor combination and calibration association on 2026-10-21.
+# Paths are relative to the workspace root.
+bag: ../lidarbag/其他包/Corridor01.bag
+reference: null
+calibration: ../lidarbag/其他包/传感器标定参数.md
+calibration_confirmed: true
+calibration_source: User confirmed Avia, its IMU, the 640x480 RGB stream, and this MEI calibration for Corridor01.
+reference_confirmed: false
+reference_note: No matched reference provided for Corridor01; the old Long Corridor CSV is not used.
+lidar_kind: avia
+lidar_topic: /livox/avia/lidar
+imu_topic: /livox/avia/imu
+image_topic: /camera/color/image_raw/compressed
+imu_acc_scale: 1.0
+image_rate_hz: 10.0
+gravity_norm: 9.81
+# The first seconds are stationary; measured vector acceleration std is ~0.19 m/s^2.
+stationary_acc_std: 0.30
+imu_time_offset: 0.0
+img_time_offset: 0.0
+seq_name: corridor01_avia_livo

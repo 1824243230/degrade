@@ -1,0 +1,16 @@
+loop_closure:
+  enabled: false
+  queue_limit: 32
+  submap_seconds: 1.0
+  submap_distance: 2.0
+  submap_angle_deg: 20.0
+  voxel: 0.2
+  exclusion_seconds: 30.0
+  min_btc_score: 0.5
+  min_triangles: 6
+  radius: 0.3
+  min_overlap: 0.35
+  max_rmse: 0.15
+  min_eigen_ratio: 0.0001
+  consistency_distance: 0.5
+  consistency_angle_deg: 5.0

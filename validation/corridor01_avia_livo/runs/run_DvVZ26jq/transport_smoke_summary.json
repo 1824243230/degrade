@@ -1,0 +1,29 @@
+{
+  "duration_seconds": 20,
+  "mode": "external rosbag play, LIVO + BTC",
+  "output_counts": {
+    "cloud": 131,
+    "odometry": 131,
+    "image": 131
+  },
+  "last_messages": {
+    "odometry": {
+      "frame": "camera_init",
+      "stamp": 1737471542.2117677
+    },
+    "cloud": {
+      "frame": "camera_init",
+      "stamp": 1737471542.2117677,
+      "width": 18098,
+      "height": 1
+    },
+    "image": {
+      "frame": "",
+      "stamp": 1737471542.2117677,
+      "width": 640,
+      "height": 480
+    }
+  },
+  "output_dir": "/home/hyh/salivo/validation/corridor01_avia_livo/runs/run_DvVZ26jq",
+  "temporary_logs": "/tmp/salivo-corridor01-smoke-91gfb839"
+}

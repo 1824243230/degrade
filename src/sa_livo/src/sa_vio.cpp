@@ -123,10 +123,19 @@ bool SAVioManager::projectPoint(const StatesGroup &x, const V3D &pos_w, V3D &pc,
   // point in IMU frame, then camera frame: pc = Rci·Rᵀ·(pw − p) + Pci
   const V3D p_i = x.rot_end.transpose() * (pos_w - x.pos_end);
   pc = Rci_ * p_i + Pci_;
-  if (pc[2] < cfg_.depth_min) return false;
+  if (!pc.allFinite() || pc[2] < cfg_.depth_min) return false;
   px = cam_->world2cam(pc);
+  if (!px.allFinite()) return false;
   const int rho = std::max(1, static_cast<int>(std::floor(cfg_.patch_spacing / 2.0)) - 1);
-  return cam_->isInFrame(px.cast<int>(), rho + 1);
+  if (!cam_->isInFrame(px.cast<int>(), rho + 1)) return false;
+  if (!valid_mask_.empty()) {
+    // Include the bilinear interpolation neighbours and every patch pixel.
+    const int u=int(px.x()),v=int(px.y()),margin=rho+1;
+    if(u-margin<0 || v-margin<0 || u+margin>=valid_mask_.cols || v+margin>=valid_mask_.rows) return false;
+    for(int y=v-margin;y<=v+margin;++y)
+      for(int x=u-margin;x<=u+margin;++x) if(!valid_mask_.at<unsigned char>(y,x)) return false;
+  }
+  return true;
 }
 
 void SAVioManager::collectFramePhotometric(const SAWindowFrame &f, const StatesGroup &x,

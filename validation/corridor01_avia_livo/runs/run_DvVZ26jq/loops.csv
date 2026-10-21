@@ -1,0 +1,14 @@
+source,target,timestamp,btc_score,triangles,overlap_forward,overlap_reverse,rmse,eigen_ratio,accepted,reason
+0,-1,1737471527.33,0,0,0,0,0,0,0,no_candidate
+1,-1,1737471528.43,0,0,0,0,0,0,0,no_candidate
+2,-1,1737471529.53,0,0,0,0,0,0,0,no_candidate
+3,-1,1737471530.63,0,0,0,0,0,0,0,no_candidate
+4,-1,1737471531.73,0,0,0,0,0,0,0,no_candidate
+5,-1,1737471532.83,0,0,0,0,0,0,0,no_candidate
+6,-1,1737471533.93,0,0,0,0,0,0,0,no_candidate
+7,-1,1737471535.03,0,0,0,0,0,0,0,no_candidate
+8,-1,1737471536.13,0,0,0,0,0,0,0,no_candidate
+9,-1,1737471537.23,0,0,0,0,0,0,0,no_candidate
+10,-1,1737471538.3,0,0,0,0,0,0,0,no_candidate
+11,-1,1737471539.41,0,0,0,0,0,0,0,no_candidate
+12,-1,1737471542.11,0,0,0,0,0,0,0,no_candidate
